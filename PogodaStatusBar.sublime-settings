@@ -1,4 +1,4 @@
 {
-	"update_interval": 18001,
+	"update_interval": 600,
 	"template": "%(title)s⎢%(temp)s℃ %(status)s⎢%(tlevel)s %(ticon)s"
 }

@@ -2,6 +2,7 @@ import sublime
 import sublime_plugin
 import urllib
 import xml.etree.ElementTree as ET
+import time
 
 POGODASTATUSBAR_SETTING_FILE = 'PogodaStatusBar.sublime-settings'
 
@@ -53,7 +54,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
 
 		if not self._activated:
 			settings = sublime.load_settings(POGODASTATUSBAR_SETTING_FILE)
-			self._updateInterval = settings.get('update_interval', 1800)
+			self._updateInterval = settings.get('update_interval', 600)
 			self._template = settings.get('template', None)
 
 			self._updateData()
@@ -104,6 +105,8 @@ class PogodaStatusBar(sublime_plugin.EventListener):
 			traffic = xml.find('traffic').find('region')
 			tlevel = traffic.find('level').text
 			ticon = self._getTrafficIcon(traffic)
+
+			timestr = time.time()
 
 			self._status = self._template % vars()
 		else:
