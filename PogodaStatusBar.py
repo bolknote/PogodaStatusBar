@@ -2,7 +2,6 @@ import sublime
 import sublime_plugin
 import urllib
 import xml.etree.ElementTree as ET
-import time
 
 POGODASTATUSBAR_SETTING_FILE = 'PogodaStatusBar.sublime-settings'
 
@@ -66,9 +65,14 @@ class PogodaStatusBar(sublime_plugin.EventListener):
 
 	# Циклический запуск таймера
 	def _startTimer(self):
-		self._updateData()
-		self._showStatus()
-		sublime.set_timeout_async(lambda: self._startTimer(), self._updateInterval * 1e3)
+		if self._updateData():
+			self._showStatus()
+			timeout = self._updateInterval
+		else:
+			# если не удалось обновить, попробовать через минуту
+			timeout = 60
+
+		sublime.set_timeout_async(lambda: self._startTimer(), timeout * 1e3)
 
 	# Получение погодных данных
 	def _getData(self):
@@ -106,11 +110,11 @@ class PogodaStatusBar(sublime_plugin.EventListener):
 			tlevel = traffic.find('level').text
 			ticon = self._getTrafficIcon(traffic)
 
-			timestr = time.time()
-
 			self._status = self._template % vars()
+			return True
 		else:
 			self._status = None
+			return False
 
 	# Выводим статус в текущий view
 	def _showStatus(self):
