@@ -70,7 +70,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             self._showStatus()
             timeout = self._updateInterval
         else:
-            # если не удалось обновить, попробовать через минуту
+            # if failed retry in minite
             timeout = 60
 
         sublime.set_timeout_async(lambda: self._startTimer(), timeout * 1e3)
