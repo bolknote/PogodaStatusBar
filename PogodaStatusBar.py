@@ -8,7 +8,7 @@ POGODASTATUSBAR_SETTING_FILE = 'PogodaStatusBar.sublime-settings'
 
 class PogodaStatusBar(sublime_plugin.EventListener):
     # https://tech.yandex.ru/weather/doc/dg/concepts/translations-docpage/
-    # Иконки погоды
+    # Weather icons
     _icons = {
         "clear": "🌞",
         "mostly-clear": "🌤",
@@ -31,24 +31,24 @@ class PogodaStatusBar(sublime_plugin.EventListener):
         "cloudy-and-snow": "🌨"
     }
 
-    # Иконки трафика
+    # Traffic level icons
     _ticons = {'green': '🍏', 'yellow': '🍋', 'red': '🍅'}
 
-    # Настройка: интервал обновлений
+    # Settings: update interval
     _updateInterval = None
-    # Настройка: шаблон вывода
+    # Settings: output template
     _template = None
-    # Строка, которая выводится в statusbar
+    # Cache of statusbar string
     _status = None
-    # Была ли инициализация класса
+    # Was plugin started
     _activated = False
-    # Текущий view (объект Sublime)
+    # Current view (Sublime's object)
     _view = None
 
     def on_activated_async(self, view):
         self._run(view)
 
-    # Запуск для указанного окна (view)
+    # Run for given window (view)
     def _run(self, view):
         self._view = view
 
@@ -64,7 +64,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
 
         self._showStatus()
 
-    # Циклический запуск таймера
+    # Timer loop
     def _startTimer(self):
         if self._updateData():
             self._showStatus()
@@ -75,7 +75,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
 
         sublime.set_timeout_async(lambda: self._startTimer(), timeout * 1e3)
 
-    # Получение погодных данных
+    # Get current weather and traffic level
     def _getData(self):
         try:
             url = "https://export.yandex.ru/bar/reginfo.xml"
@@ -84,7 +84,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
         except (IOError, ET.ParseError):
             return None
 
-    # Значок погоды из элемента XML
+    # Get weather icon from XML element
     def _getStatus(self, el):
         day_part = el.findall('day_part')[0]
 
@@ -93,11 +93,11 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             day_part.find('weather_type').text
         )
 
-    # Иконка трафика из элемента XML
+    # Get traffic level icon from XML element
     def _getTrafficIcon(self, el):
         return self._ticons[el.find('icon').text]
 
-    # Обновление кеша строки statusbar
+    # Update statusbar string cache
     def _updateData(self):
         xml = self._getData()
 
@@ -117,7 +117,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             self._status = None
             return False
 
-    # Выводим статус в текущий view
+    # Print cached status in current view
     def _showStatus(self):
         if self._status is not None:
             self._view.set_status('YandexPogoda', self._status)
