@@ -1,7 +1,8 @@
 import sublime
 import sublime_plugin
-import urllib
+import urllib.request
 import xml.etree.ElementTree as ET
+import re
 
 POGODASTATUSBAR_SETTING_FILE = 'PogodaStatusBar.sublime-settings'
 
@@ -38,6 +39,8 @@ class PogodaStatusBar(sublime_plugin.EventListener):
     _updateInterval = None
     # Settings: output template
     _template = None
+    # Settings: current region
+    _region = None
     # Cache of statusbar string
     _status = None
     # Was plugin started
@@ -56,6 +59,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             settings = sublime.load_settings(POGODASTATUSBAR_SETTING_FILE)
             self._updateInterval = settings.get('update_interval', 600)
             self._template = settings.get('template', None)
+            self._region = self._getRegion() or 0
 
             self._updateData()
             self._startTimer()
@@ -63,6 +67,15 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             self._activated = True
 
         self._showStatus()
+
+    # Get current region
+    def _getRegion(self):
+        try:
+            url = "https://yandex.ru/pogoda/"
+            content = urllib.request.urlopen(url).read()
+            return re.search(r'region"?:(\d+)', str(content)).group(1)
+        except (IOError, AttributeError):
+            return None
 
     # Timer loop
     def _startTimer(self):
@@ -78,7 +91,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
     # Get current weather and traffic level
     def _getData(self):
         try:
-            url = "https://export.yandex.ru/bar/reginfo.xml"
+            url = "https://export.yandex.ru/bar/reginfo.xml?region=" + self._region
             content = urllib.request.urlopen(url).read()
             return ET.fromstring(content)
         except (IOError, ET.ParseError):
