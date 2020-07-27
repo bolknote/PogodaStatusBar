@@ -59,7 +59,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             settings = sublime.load_settings(POGODASTATUSBAR_SETTING_FILE)
             self._updateInterval = settings.get('update_interval', 600)
             self._template = settings.get('template', None)
-            self._region = self._getRegion() or 0
+            self._region = self._getRegion() or '0'
 
             self._updateData()
             self._startTimer()
@@ -120,9 +120,12 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             status = self._getStatus(weather)
             temp = weather.findall('day_part')[0].find('temperature').text
 
-            traffic = xml.find('traffic').find('region')
-            tlevel = traffic.find('level').text
-            ticon = self._getTrafficIcon(traffic)
+            try:
+                traffic = xml.find('traffic').find('region')
+                tlevel = traffic.find('level').text
+                ticon = self._getTrafficIcon(traffic)
+            except AttributeError:
+                tlevel, ticon = '', ''
 
             self._status = self._template % vars()
             return True
