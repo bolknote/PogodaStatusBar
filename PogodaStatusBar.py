@@ -73,7 +73,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
         try:
             url = "https://yandex.ru/pogoda/"
             content = urllib.request.urlopen(url).read()
-            return re.search(r'region"?:(\d+)', str(content)).group(1)
+            return re.search(r'/pogoda/(\d+)', str(content)).group(1)
         except (IOError, AttributeError):
             return None
 
