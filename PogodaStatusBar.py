@@ -10,6 +10,7 @@ POGODASTATUSBAR_SETTING_FILE = 'PogodaStatusBar.sublime-settings'
 
 
 class PogodaStatusBar(sublime_plugin.EventListener):
+    # https://www.gismeteo.ru/api
     # Weather icons
     _icons = {
         "🌞": {"d"},
@@ -118,7 +119,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
     # Get Gistemeto forecast data
     def _getGismeteoForecast(self, region):
         try:
-            url = f'https://services.gismeteo.ru/inform-service/inf_chrome/forecast/?lang=en&city={region}'
+            url = 'https://services.gismeteo.ru/inform-service/inf_chrome/forecast/?lang=en&city=%s' % region
             content = urllib.request.urlopen(url).read()
             return ET.fromstring(content)
         except (IOError, ET.ParseError):
