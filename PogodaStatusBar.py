@@ -113,7 +113,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
     def _getGismeteoRegion(self, city_title):
         url = "https://www.gismeteo.ru/rmq/search/%s/1/" % urllib.parse.quote_plus(city_title)
         content = urllib.request.urlopen(url).read()
-        json_content = json.loads(content)
+        json_content = json.loads(content.decode('utf-8'))
         return json_content['data'][0]['id']
 
     # Get Gistemeto forecast data
