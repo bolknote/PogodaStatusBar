@@ -8,8 +8,6 @@ import json
 import functools
 import html
 
-import sys
-
 POGODASTATUSBAR_SETTING_FILE = 'PogodaStatusBar.sublime-settings'
 
 
