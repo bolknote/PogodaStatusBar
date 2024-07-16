@@ -5,6 +5,10 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 import re
 import json
+import functools
+import html
+
+import sys
 
 POGODASTATUSBAR_SETTING_FILE = 'PogodaStatusBar.sublime-settings'
 
@@ -53,7 +57,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             settings = sublime.load_settings(POGODASTATUSBAR_SETTING_FILE)
             self._updateInterval = settings.get('update_interval', 600)
             self._template = settings.get('template', None)
-            self._region = self._getRegion() or '0'
+            self._region = self._getRegionData()
             self._updateData()
             self._startTimer()
 
@@ -61,12 +65,17 @@ class PogodaStatusBar(sublime_plugin.EventListener):
 
         self._showStatus()
 
-    # Get current region
-    def _getRegion(self):
+    # Get current region data
+    @functools.cache
+    def _getRegionData(self):
         try:
             url = "https://yandex.ru/tune/geo/"
-            content = urllib.request.urlopen(url).read()
-            return re.search(r'"region":\s*(\d+)', str(content)).group(1)
+            content = urllib.request.urlopen(url).read().decode('utf-8')
+            region_data = re.search(r'data-bem="([^"]+coords[^"]+)"', str(content)).group(1)
+            parsed_region_data = json.loads(html.unescape(region_data))
+
+            # {'id': xx, 'region': 'XXXXX', 'coords': ['XX.XXXXX', 'XX.XXXXX'], 'accuracy': 'XXXXXX'}
+            return parsed_region_data['checkbox']['auto']
         except (IOError, AttributeError):
             return None
 
@@ -84,7 +93,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
     # Get current traffic level
     def _getData(self):
         try:
-            url = "https://export.yandex.ru/bar/reginfo.xml?region=" + self._region
+            url = "https://export.yandex.ru/bar/reginfo.xml?region=" + str(self._region['id'])
             content = urllib.request.urlopen(url).read()
             return ET.fromstring(content)
         except (IOError, ET.ParseError):
@@ -109,12 +118,13 @@ class PogodaStatusBar(sublime_plugin.EventListener):
     def _getTrafficIcon(self, el):
         return self._ticons[el.find('icon').text]
 
-    # Get Gismeteo region by city title
-    def _getGismeteoRegion(self, city_title):
-        url = "https://www.gismeteo.ru/rmq/search/%s/1/" % urllib.parse.quote_plus(city_title)
-        content = urllib.request.urlopen(url).read()
-        json_content = json.loads(content.decode('utf-8'))
-        return json_content['data'][0]['id']
+    # Get Gismeteo region by city coords
+    @functools.cache
+    def _getGismeteoRegion(self, coords):
+        url = 'https://services.gismeteo.net/inform-service/inf_chrome/cities/?lng=%s&lat=%s&count=1&lang=en'
+        content = urllib.request.urlopen(url % coords).read().decode('utf-8')
+
+        return ET.fromstring(content).find('item').attrib['id']
 
     # Get Gistemeto forecast data
     def _getGismeteoForecast(self, region):
@@ -132,7 +142,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
 
         if xml is not None:
             title = xml.find('region').find('title').text
-            gm_xml = self._getGismeteoForecast(self._getGismeteoRegion(title))
+            gm_xml = self._getGismeteoForecast(self._getGismeteoRegion(tuple(self._region['coords'])))
 
             weather = gm_xml.findall('./location/fact/values')[0]
             status = self._getStatus(weather.attrib['icon'])
