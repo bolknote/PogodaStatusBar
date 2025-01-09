@@ -7,6 +7,7 @@ import re
 import json
 import functools
 import html
+import sys
 
 POGODASTATUSBAR_SETTING_FILE = 'PogodaStatusBar.sublime-settings'
 
@@ -43,6 +44,8 @@ class PogodaStatusBar(sublime_plugin.EventListener):
     _activated = False
     # Current view (Sublime's object)
     _view = None
+    # Cache decorator
+    _cache = functools.lru_cache(maxsize=None) if sys.version_info < (3, 9, 0) else functools.cache
 
     def on_activated_async(self, view):
         self._run(view)
@@ -64,7 +67,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
         self._showStatus()
 
     # Get current region data
-    @functools.cache
+    @_cache
     def _getRegionData(self):
         try:
             url = "https://yandex.ru/tune/geo/"
@@ -117,7 +120,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
         return self._ticons[el.find('icon').text]
 
     # Get Gismeteo region by city coords
-    @functools.cache
+    @_cache
     def _getGismeteoRegion(self, coords):
         url = 'https://services.gismeteo.net/inform-service/inf_chrome/cities/?lng=%s&lat=%s&count=1&lang=en'
         content = urllib.request.urlopen(url % coords).read().decode('utf-8')
