@@ -6,7 +6,6 @@ import xml.etree.ElementTree as ET
 import re
 import json
 import functools
-import html
 import sys
 
 POGODASTATUSBAR_SETTING_FILE = 'PogodaStatusBar.sublime-settings'
@@ -79,7 +78,7 @@ class PogodaStatusBar(sublime_plugin.EventListener):
         url = "https://yandex.ru/tune/geo/"
         content = urllib.request.urlopen(url).read().decode('utf-8')
         region_data = re.search(r'data-bem="([^"]+coords[^"]+)"', str(content)).group(1)
-        parsed_region_data = json.loads(html.unescape(region_data))
+        parsed_region_data = json.loads(region_data.replace('&quot;', '"'))
 
         # {'id': xx, 'region': 'XXXXX', 'coords': ['XX.XXXXX', 'XX.XXXXX'], 'accuracy': 'XXXXXX'}
         return parsed_region_data['checkbox']['auto']
