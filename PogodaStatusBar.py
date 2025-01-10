@@ -58,27 +58,31 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             settings = sublime.load_settings(POGODASTATUSBAR_SETTING_FILE)
             self._updateInterval = settings.get('update_interval', 600)
             self._template = settings.get('template', None)
-            self._region = self._getRegionData()
-            self._updateData()
-            self._startTimer()
 
-            self._activated = True
+            try:
+                self._region = self._getRegionData()
+            except (IOError, AttributeError):
+                return
 
-        self._showStatus()
+            if self._region is not None:
+                self._updateData()
+                self._startTimer()
+
+                self._activated = True
+        else:
+            self._showStatus()
 
     # Get current region data
+    @staticmethod
     @_cache
-    def _getRegionData(self):
-        try:
-            url = "https://yandex.ru/tune/geo/"
-            content = urllib.request.urlopen(url).read().decode('utf-8')
-            region_data = re.search(r'data-bem="([^"]+coords[^"]+)"', str(content)).group(1)
-            parsed_region_data = json.loads(html.unescape(region_data))
+    def _getRegionData():
+        url = "https://yandex.ru/tune/geo/"
+        content = urllib.request.urlopen(url).read().decode('utf-8')
+        region_data = re.search(r'data-bem="([^"]+coords[^"]+)"', str(content)).group(1)
+        parsed_region_data = json.loads(html.unescape(region_data))
 
-            # {'id': xx, 'region': 'XXXXX', 'coords': ['XX.XXXXX', 'XX.XXXXX'], 'accuracy': 'XXXXXX'}
-            return parsed_region_data['checkbox']['auto']
-        except (IOError, AttributeError):
-            return None
+        # {'id': xx, 'region': 'XXXXX', 'coords': ['XX.XXXXX', 'XX.XXXXX'], 'accuracy': 'XXXXXX'}
+        return parsed_region_data['checkbox']['auto']
 
     # Timer loop
     def _startTimer(self):
@@ -120,8 +124,9 @@ class PogodaStatusBar(sublime_plugin.EventListener):
         return self._ticons[el.find('icon').text]
 
     # Get Gismeteo region by city coords
+    @staticmethod
     @_cache
-    def _getGismeteoRegion(self, coords):
+    def _getGismeteoRegion(coords):
         url = 'https://services.gismeteo.net/inform-service/inf_chrome/cities/?lng=%s&lat=%s&count=1&lang=en'
         content = urllib.request.urlopen(url % coords).read().decode('utf-8')
 
