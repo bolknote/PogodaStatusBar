@@ -63,9 +63,10 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             self._updateInterval = settings.get('update_interval', 600)
             self._template = settings.get('template', None)
 
-            if self._updateData():
-                self._startTimer()
-                self._activated = True
+            # Mark the listener as active before starting the timer.  The timer
+            # schedules its own retry even when the first update fails.
+            self._activated = True
+            self._startTimer()
         else:
             self._showStatus()
 
@@ -99,14 +100,16 @@ class PogodaStatusBar(sublime_plugin.EventListener):
 
     # Timer loop
     def _startTimer(self) -> None:
-        if self._updateData():
-            self._showStatus()
-            timeout = self._updateInterval
-        else:
-            # if failed retry in minite
-            timeout = 60
+        # Retry failures after a minute.  Scheduling in finally keeps one
+        # unexpected exception from stopping the refresh loop permanently.
+        timeout = 60
 
-        sublime.set_timeout_async(lambda: self._startTimer(), timeout * 1e3)
+        try:
+            if self._updateData():
+                self._showStatus()
+                timeout = self._updateInterval
+        finally:
+            sublime.set_timeout_async(lambda: self._startTimer(), timeout * 1e3)
 
     # Get current traffic level
     def _getData(self) -> Optional[ET.Element]:
@@ -180,7 +183,8 @@ class PogodaStatusBar(sublime_plugin.EventListener):
             weather = gm_xml.findall('./location/fact/values')[0]
             status = self._getStatus(weather.attrib['icon'])
             temp = weather.attrib['t']
-        except (AttributeError, IndexError, TypeError, ValueError):
+        except (AttributeError, IndexError, KeyError, OSError, TypeError,
+                ValueError, ET.ParseError):
             self._status = None
             return False
 
